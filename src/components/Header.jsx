@@ -28,13 +28,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 export default function Header() {
   const [query, setQuery] = useState("");
   const [cartItems, setCartItems] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
   const user = useSelector((state) => state.user.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -73,6 +73,25 @@ export default function Header() {
     } catch (error) {
       console.error("Error fetching search results:", error);
       toast.error("Something went wrong. Please try again.");
+    }
+  };
+
+  const handleDeleteFromCart = async (itemId) => {
+    try {
+      // Remove item from local storage
+      const updatedCartItems = cartItems.filter((item) => item.id !== itemId);
+      localStorage.setItem("cartItems", JSON.stringify(updatedCartItems));
+
+      // Make API call to delete the item from the server if needed
+      await axios.delete(`/api/cart/${itemId}`);
+
+      // Update state and UI
+      setCartItems(updatedCartItems);
+      toast.success("Item deleted successfully!");
+      setIsModalOpen(false); // Close modal after deletion
+    } catch (error) {
+      console.error("Failed to delete item:", error);
+      toast.error("Failed to delete item.");
     }
   };
 
@@ -136,9 +155,25 @@ export default function Header() {
                       <p>Your cart is empty.</p>
                     ) : (
                       cartItems.map((item) => (
-                        <div key={item.id} className="flex justify-between">
+                        <div
+                          key={item.id}
+                          className="flex justify-between items-center"
+                        >
                           <span>{item.title}</span>
-                          <span>${item.price.toFixed(2)}</span>
+                          <div className="flex items-center space-x-2">
+                            <span>${item.price.toFixed(2)}</span>
+                            <Button
+                              onClick={handleDeleteFromCart}
+                              // onClick={() => {
+                              //   setItemToDelete(item.id);
+                              //   setIsModalOpen(true);
+                              // }}
+                              variant="outline"
+                              className="bg-red-500 text-white"
+                            >
+                              Delete
+                            </Button>
+                          </div>
                         </div>
                       ))
                     )}
